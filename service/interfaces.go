@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/ONSdigital/dp-identity-api/cognitoclient"
 	"github.com/ONSdigital/dp-identity-api/config"
 )
 
@@ -16,6 +17,7 @@ import (
 type Initialiser interface {
 	DoGetHTTPServer(bindAddr string, router http.Handler) HTTPServer
 	DoGetHealthCheck(cfg *config.Config, buildTime, gitCommit, version string) (HealthChecker, error)
+	DoGetCognitoClient(cfg *config.Config) (*cognitoclient.Cognito)
 }
 
 // HTTPServer defines the required methods from the HTTP server

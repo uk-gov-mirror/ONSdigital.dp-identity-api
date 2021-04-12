@@ -5,6 +5,8 @@ import (
 
 	"github.com/ONSdigital/dp-identity-api/config"
 
+	cognitoclient "github.com/ONSdigital/dp-identity-api/cognitoclient"
+
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 )
@@ -57,4 +59,8 @@ func (e *Init) DoGetHealthCheck(cfg *config.Config, buildTime, gitCommit, versio
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
 	return &hc, nil
+}
+
+func (e *Init) DoGetCognitoClient(cfg *config.Config) *cognitoclient.Cognito  {
+	return cognitoclient.New(cfg)
 }

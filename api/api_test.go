@@ -5,22 +5,27 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ONSdigital/dp-identity-api/config"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestSetup(t *testing.T) {
-
-	cfg := &config.Config{AWSRegion: "eu-west-1"}
-
 	Convey("Given an API instance", t, func() {
 		r := mux.NewRouter()
 		ctx := context.Background()
-		api := Setup(ctx, cfg, r)
+		api := Setup(ctx, r)
 
-		Convey("When created the following routes should have been added", func() {
-			// Replace the check below with any newly added api endpoints
+		sess := session.Must(session.NewSessionWithOptions(session.Options{
+			SharedConfigState: session.SharedConfigEnable,
+		}))
+
+		awsRegion := "eu-west-1"
+		api.CognitoClient = cognitoidentityprovider.New(sess, &aws.Config{Region: &awsRegion})
+
+		Convey("When created the following route(s) should have been added", func() {
 			So(hasRoute(api.Router, "/hello", "GET"), ShouldBeTrue)
 		})
 

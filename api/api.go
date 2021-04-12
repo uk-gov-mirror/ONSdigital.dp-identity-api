@@ -3,13 +3,12 @@ package api
 import (
 	"context"
 
-	"github.com/ONSdigital/dp-identity-api/config"
 	"github.com/gorilla/mux"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	cognito "github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
 )
+
+var CognitoClient *cognito.CognitoIdentityProvider
 
 //API provides a struct to wrap the api around
 type API struct {
@@ -18,18 +17,12 @@ type API struct {
 }
 
 //Setup function sets up the api and returns an api
-func Setup(ctx context.Context, cfg *config.Config, r *mux.Router) *API {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
-	cognitoClient := cognito.New(sess, &aws.Config{Region: &cfg.AWSRegion})
-
+func Setup(ctx context.Context, r *mux.Router) *API {
 	api := &API{
 		Router:        r,
-		CognitoClient: cognitoClient,
+		CognitoClient: CognitoClient,
 	}
 
 	r.HandleFunc("/hello", HelloHandler(ctx)).Methods("GET")
-	return api
+    return api
 }

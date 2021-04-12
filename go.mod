@@ -7,6 +7,7 @@ require (
 	github.com/ONSdigital/dp-component-test v0.3.0
 	github.com/ONSdigital/dp-healthcheck v1.0.5
 	github.com/ONSdigital/dp-net v1.0.12
+	github.com/ONSdigital/dp-permissions-api v0.4.0 // indirect
 	github.com/ONSdigital/log.go v1.0.1
 	github.com/aws/aws-sdk-go v1.38.17
 	github.com/coreos/etcd v3.3.25+incompatible // indirect

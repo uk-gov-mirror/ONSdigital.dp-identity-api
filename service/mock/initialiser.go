@@ -4,11 +4,11 @@
 package mock
 
 import (
-	"net/http"
-	"sync"
-
+	cognitoclient "github.com/ONSdigital/dp-identity-api/cognitoclient"
 	"github.com/ONSdigital/dp-identity-api/config"
 	"github.com/ONSdigital/dp-identity-api/service"
+	"net/http"
+	"sync"
 )
 
 // Ensure, that InitialiserMock does implement service.Initialiser.
@@ -17,29 +17,29 @@ var _ service.Initialiser = &InitialiserMock{}
 
 // InitialiserMock is a mock implementation of service.Initialiser.
 //
-//     func TestSomethingThatUsesInitialiser(t *testing.T) {
+// 	func TestSomethingThatUsesInitialiser(t *testing.T) {
 //
-//         // make and configure a mocked service.Initialiser
-//         mockedInitialiser := &InitialiserMock{
-//             DoGetHTTPServerFunc: func(bindAddr string, router http.Handler) service.HTTPServer {
-// 	               panic("mock out the DoGetHTTPServer method")
-//             },
-//             DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
-// 	               panic("mock out the DoGetHealthCheck method")
-//             },
-//             DoGetS3UploadedFunc: func(ctx context.Context, cfg *config.Config) (api.S3Clienter, error) {
-// 	               panic("mock out the DoGetS3Uploaded method")
-//             },
-//             DoGetVaultFunc: func(ctx context.Context, cfg *config.Config) (api.VaultClienter, error) {
-// 	               panic("mock out the DoGetVault method")
-//             },
-//         }
+// 		// make and configure a mocked service.Initialiser
+// 		mockedInitialiser := &InitialiserMock{
+// 			DoGetCognitoClientFunc: func(cfg *config.Config) *cognitoclient.Cognito {
+// 				panic("mock out the DoGetCognitoClient method")
+// 			},
+// 			DoGetHTTPServerFunc: func(bindAddr string, router http.Handler) service.HTTPServer {
+// 				panic("mock out the DoGetHTTPServer method")
+// 			},
+// 			DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
+// 				panic("mock out the DoGetHealthCheck method")
+// 			},
+// 		}
 //
-//         // use mockedInitialiser in code that requires service.Initialiser
-//         // and then make assertions.
+// 		// use mockedInitialiser in code that requires service.Initialiser
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type InitialiserMock struct {
+	// DoGetCognitoClientFunc mocks the DoGetCognitoClient method.
+	DoGetCognitoClientFunc func(cfg *config.Config) *cognitoclient.Cognito
+
 	// DoGetHTTPServerFunc mocks the DoGetHTTPServer method.
 	DoGetHTTPServerFunc func(bindAddr string, router http.Handler) service.HTTPServer
 
@@ -48,6 +48,11 @@ type InitialiserMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// DoGetCognitoClient holds details about calls to the DoGetCognitoClient method.
+		DoGetCognitoClient []struct {
+			// Cfg is the cfg argument value.
+			Cfg *config.Config
+		}
 		// DoGetHTTPServer holds details about calls to the DoGetHTTPServer method.
 		DoGetHTTPServer []struct {
 			// BindAddr is the bindAddr argument value.
@@ -67,8 +72,40 @@ type InitialiserMock struct {
 			Version string
 		}
 	}
-	lockDoGetHTTPServer  sync.RWMutex
-	lockDoGetHealthCheck sync.RWMutex
+	lockDoGetCognitoClient sync.RWMutex
+	lockDoGetHTTPServer    sync.RWMutex
+	lockDoGetHealthCheck   sync.RWMutex
+}
+
+// DoGetCognitoClient calls DoGetCognitoClientFunc.
+func (mock *InitialiserMock) DoGetCognitoClient(cfg *config.Config) *cognitoclient.Cognito {
+	if mock.DoGetCognitoClientFunc == nil {
+		panic("InitialiserMock.DoGetCognitoClientFunc: method is nil but Initialiser.DoGetCognitoClient was just called")
+	}
+	callInfo := struct {
+		Cfg *config.Config
+	}{
+		Cfg: cfg,
+	}
+	mock.lockDoGetCognitoClient.Lock()
+	mock.calls.DoGetCognitoClient = append(mock.calls.DoGetCognitoClient, callInfo)
+	mock.lockDoGetCognitoClient.Unlock()
+	return mock.DoGetCognitoClientFunc(cfg)
+}
+
+// DoGetCognitoClientCalls gets all the calls that were made to DoGetCognitoClient.
+// Check the length with:
+//     len(mockedInitialiser.DoGetCognitoClientCalls())
+func (mock *InitialiserMock) DoGetCognitoClientCalls() []struct {
+	Cfg *config.Config
+} {
+	var calls []struct {
+		Cfg *config.Config
+	}
+	mock.lockDoGetCognitoClient.RLock()
+	calls = mock.calls.DoGetCognitoClient
+	mock.lockDoGetCognitoClient.RUnlock()
+	return calls
 }
 
 // DoGetHTTPServer calls DoGetHTTPServerFunc.

@@ -9,9 +9,12 @@ import (
 	"time"
 
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider/cognitoidentityprovideriface"
 
+	cognitoclient "github.com/ONSdigital/dp-identity-api/cognitoclient"
 	"github.com/ONSdigital/dp-identity-api/config"
 	"github.com/ONSdigital/dp-identity-api/service"
+
 	"github.com/ONSdigital/dp-identity-api/service/mock"
 	serviceMock "github.com/ONSdigital/dp-identity-api/service/mock"
 
@@ -37,6 +40,16 @@ var funcDoGetHealthcheckErr = func(cfg *config.Config, buildTime string, gitComm
 
 var funcDoGetHTTPServerNil = func(bindAddr string, router http.Handler) service.HTTPServer {
 	return nil
+}
+
+type mockCognitoIdentityProviderClient struct {
+    cognitoidentityprovideriface.CognitoIdentityProviderAPI
+}
+
+func buildCognitoClient(cfg *config.Config, cognitoClient *cognitoclient.Cognito) *cognitoclient.Cognito {
+	cognitoClient.Client = &mockCognitoIdentityProviderClient{}
+	cognitoClient.AWSUserPoolID = cfg.AWSCognitoUserPoolID
+    return cognitoClient
 }
 
 func TestRun(t *testing.T) {
@@ -74,16 +87,21 @@ func TestRun(t *testing.T) {
 			return serverMock
 		}
 
+		funcDoGetCognitoClient := func(cfg *config.Config) *cognitoclient.Cognito {
+			cognitoClient := buildCognitoClient(cfg, cognitoclient.New(cfg))
+			return cognitoClient
+		}
+
 		funcDoGetFailingHTTPSerer := func(bindAddr string, router http.Handler) service.HTTPServer {
 			return failingServerMock
 		}
 
 		Convey("Given that initialising healthcheck returns an error", func() {
-
 			// setup (run before each `Convey` at this scope / indentation):
 			initMock := &serviceMock.InitialiserMock{
 				DoGetHTTPServerFunc:  funcDoGetHTTPServerNil,
 				DoGetHealthCheckFunc: funcDoGetHealthcheckErr,
+				DoGetCognitoClientFunc: funcDoGetCognitoClient,
 			}
 			svcErrors := make(chan error, 1)
 			svcList := service.NewServiceList(initMock)
@@ -105,6 +123,7 @@ func TestRun(t *testing.T) {
 			initMock := &serviceMock.InitialiserMock{
 				DoGetHTTPServerFunc:  funcDoGetHTTPServer,
 				DoGetHealthCheckFunc: funcDoGetHealthcheckOk,
+				DoGetCognitoClientFunc: funcDoGetCognitoClient,
 			}
 			svcErrors := make(chan error, 1)
 			svcList := service.NewServiceList(initMock)
@@ -117,8 +136,9 @@ func TestRun(t *testing.T) {
 			})
 
 			Convey("The checkers are registered and the healthcheck and http server started", func() {
-				So(len(hcMock.AddCheckCalls()), ShouldEqual, 0)
+				So(len(hcMock.AddCheckCalls()), ShouldEqual, 1)
 				So(len(initMock.DoGetHTTPServerCalls()), ShouldEqual, 1)
+				So(initMock.DoGetHealthCheckCalls(), ShouldHaveLength, 1)
 				So(initMock.DoGetHTTPServerCalls()[0].BindAddr, ShouldEqual, "localhost:25600")
 				So(len(hcMock.StartCalls()), ShouldEqual, 1)
 				//!!! a call needed to stop the server, maybe ?
@@ -170,6 +190,7 @@ func TestRun(t *testing.T) {
 			initMock := &serviceMock.InitialiserMock{
 				DoGetHealthCheckFunc: funcDoGetHealthcheckOk,
 				DoGetHTTPServerFunc:  funcDoGetFailingHTTPSerer,
+				DoGetCognitoClientFunc: funcDoGetCognitoClient,
 			}
 			svcErrors := make(chan error, 1)
 			svcList := service.NewServiceList(initMock)
@@ -224,6 +245,7 @@ func TestClose(t *testing.T) {
 				DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 					return hcMock, nil
 				},
+				DoGetCognitoClientFunc: func(cfg *config.Config) *cognitoclient.Cognito { return cognitoclient.New(cfg) },
 			}
 
 			svcErrors := make(chan error, 1)
@@ -251,6 +273,7 @@ func TestClose(t *testing.T) {
 				DoGetHealthCheckFunc: func(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
 					return hcMock, nil
 				},
+				DoGetCognitoClientFunc: func(cfg *config.Config) *cognitoclient.Cognito { return cognitoclient.New(cfg) },
 			}
 
 			svcErrors := make(chan error, 1)
