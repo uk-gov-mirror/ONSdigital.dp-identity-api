@@ -20,7 +20,7 @@ all: audit lint test build
 
 .PHONY: audit
 audit:
-	set -o pipefail; go list -m all | nancy sleuth
+	dis-vulncheck
 
 .PHONY: build
 build:

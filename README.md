@@ -10,6 +10,18 @@ To run the app with reflex and have it restart when you make changes, run:
 
 `make debug-watch`
 
+## Tools
+
+To run some of our tests you will need additional tooling:
+
+### Audit
+
+We use `dis-vulncheck` to do auditing, which you will [need to install](https://github.com/ONSdigital/dis-vulncheck).
+
+### Linting
+
+We use v2 of golangci-lint, which you will [need to install](https://golangci-lint.run/docs/welcome/install).
+
 ### Dummy data
 
 If test data is required in the local Cognito user pool:

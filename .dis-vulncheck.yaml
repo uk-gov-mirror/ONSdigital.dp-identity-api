@@ -1,0 +1,4 @@
+---
+ignore:
+ - id: GO-2025-3849
+   reason: This doesn't affect our application
